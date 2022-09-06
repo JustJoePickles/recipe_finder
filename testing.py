@@ -13,7 +13,7 @@ dish = input("Pick a dish type; Main course (M), Pudding (P), Drink (D):   ")
 dish = dishdict[dish[0].upper()]
 request = requests.get("https://api.edamam.com/api/recipes/v2?type=public&q"
                        "=" + query + "&app_id=" + api_id + "&app_key=" + api_key
-                       + "&dishType="+dish+"&mealType="+meal)
+                       )
 
 request = request.json()
 links = []
