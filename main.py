@@ -37,6 +37,7 @@ class MainProgram():
         return image
 
 
+
 class Overlay():
     def __init__(self, root):
         self.reference = "overlay"
@@ -70,8 +71,8 @@ class HomePage():
 
         self.window.columnconfigure(0, weight=1)
 
-        self.window.rowconfigure(0, weight=2)
-        self.window.rowconfigure(1, weight=3)
+        self.window.rowconfigure(0, weight=4)
+        self.window.rowconfigure(1, weight=1)
         self.window.rowconfigure(2, weight=1)
         self.window.rowconfigure(3, weight=9)
 
@@ -98,6 +99,34 @@ class HomePage():
         self.title.grid(row=0, column=1, sticky="nsew")
         self.escape.grid(row=0, column=2, sticky="nsew")
 
+        self.question_image = root.format_image("question.png", (50, 50))
+        self.question_button = Button(self.info, image=self.question_image,
+                                 width=10, height=10, compound="c",
+                                 relief="flat",
+                                 borderwidth=0,
+                                 bg="green", activebackground="green",
+                                 command=lambda: root.change_frame("overlay"))
+        self.question_button.pack(side=LEFT, expand=True, fill='both')
+
+        self.escape_image = root.format_image("exit.png", (50, 50))
+        self.escape_button = Button(self.escape, image=self.escape_image,
+                                      width=10, height=10, compound="c",
+                                      relief="flat",
+                                      borderwidth=0,
+                                      bg="green", activebackground="green",
+                                      command=lambda: root.root.destroy())
+        self.escape_button.pack(side=LEFT, expand=True, fill='both')
+
+
+        self.headers.columnconfigure(0,weight=2)
+        self.headers.columnconfigure(1,weight=2)
+        self.filter_header = Label(self.headers, bg="green", anchor = "w",
+                              text = "Filters")
+        self.results_header = Label(self.headers, bg="green", anchor = "w",
+                              text = "Results")
+        self.filter_header.grid(row=0, column=0, sticky="nsew")
+        self.results_header.grid(row=0, column=1, sticky="nsew")
+
         self.body.rowconfigure(0, weight=1)
         self.body.columnconfigure(0,weight=1)
         self.body.columnconfigure(1,weight=2)
@@ -108,8 +137,8 @@ class HomePage():
         self.results.grid(row=0, column=1, sticky="nsew")
 
         self.ingredients = Entry(self.search, font=root.font)
-        self.ingredients.pack(side=TOP, expand=True, fill='both', padx=20,
-                              pady=30)
+        self.ingredients.pack(side=TOP, expand=True, fill='both', padx=10,
+                              pady=15)
 
         self.filter_making()
 
