@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import math
 from tkinter import ttk
 
+
 class MainProgram():
     def __init__(self):
         self.root = Tk()
@@ -36,8 +37,8 @@ class MainProgram():
         image = ImageTk.PhotoImage(image)
         return image
 
-
-
+    def search_logic(self):
+        pass
 class Overlay():
     def __init__(self, root):
         self.reference = "overlay"
@@ -45,7 +46,6 @@ class Overlay():
                             highlightbackground="white",
                             highlightthickness=0)
         self.window.grid(row=0, column=0, sticky="nsew", padx=40, pady=15)
-
 
         self.window.columnconfigure(0, weight=1)
         self.window.columnconfigure(1, weight=8)
@@ -62,10 +62,25 @@ class Overlay():
 
 class HomePage():
     def __init__(self, root):
+
+        def edit_entry(self):
+            text = self.get()
+            if text == "Enter some ingredients...":
+                self.delete(0, END)
+            self["fg"] = "black"
+
+        def redo_entry(self):
+            text = self.get()
+            if text.strip() == "":
+                self["fg"] = "grey"
+                self.insert(0, "Enter some ingredients...")
+
+        #######################################################################
+        # Level 1
         self.reference = "homepage"
         self.blank = PhotoImage()
         self.grid_objects = []
-        self.filter_list=[]
+        self.filter_list = []
         self.window = Frame(root.root, bg="blue", width=0, height=0)
         self.window.grid(row=0, column=0, sticky="nsew")
 
@@ -86,6 +101,9 @@ class HomePage():
         self.headers.grid(row=2, column=0, sticky="nsew")
         self.body.grid(row=3, column=0, sticky="nsew")
 
+        #######################################################################
+        # Top Bar
+
         self.top_bar.rowconfigure(0, weight=1)
         self.top_bar.columnconfigure(0, weight=1)
         self.top_bar.columnconfigure(1, weight=8)
@@ -101,88 +119,112 @@ class HomePage():
 
         self.question_image = root.format_image("question.png", (50, 50))
         self.question_button = Button(self.info, image=self.question_image,
-                                 width=10, height=10, compound="c",
-                                 relief="flat",
-                                 borderwidth=0,
-                                 bg="green", activebackground="green",
-                                 command=lambda: root.change_frame("overlay"))
-        self.question_button.pack(side=LEFT, expand=True, fill='both')
-
-        self.escape_image = root.format_image("exit.png", (50, 50))
-        self.escape_button = Button(self.escape, image=self.escape_image,
                                       width=10, height=10, compound="c",
                                       relief="flat",
                                       borderwidth=0,
                                       bg="green", activebackground="green",
-                                      command=lambda: root.root.destroy())
+                                      command=lambda: root.change_frame(
+                                          "overlay"))
+        self.question_button.pack(side=LEFT, expand=True, fill='both')
+
+        self.escape_image = root.format_image("exit.png", (50, 50))
+        self.escape_button = Button(self.escape, image=self.escape_image,
+                                    width=10, height=10, compound="c",
+                                    relief="flat",
+                                    borderwidth=0,
+                                    bg="green", activebackground="green",
+                                    command=lambda: root.root.destroy())
         self.escape_button.pack(side=LEFT, expand=True, fill='both')
 
+        #######################################################################
+        # Headers
 
-        self.headers.columnconfigure(0,weight=2)
-        self.headers.columnconfigure(1,weight=2)
-        self.filter_header = Label(self.headers, bg="green", anchor = "w",
-                              text = "Filters")
-        self.results_header = Label(self.headers, bg="green", anchor = "w",
-                              text = "Results")
+        self.headers.columnconfigure(0, weight=2)
+        self.headers.columnconfigure(1, weight=2)
+        self.filter_header = Label(self.headers, bg="green", anchor="w",
+                                   text="Filters")
+        self.results_header = Label(self.headers, bg="green", anchor="w",
+                                    text="Results")
         self.filter_header.grid(row=0, column=0, sticky="nsew")
         self.results_header.grid(row=0, column=1, sticky="nsew")
 
+        #######################################################################
+        # Body
         self.body.rowconfigure(0, weight=1)
-        self.body.columnconfigure(0,weight=1)
-        self.body.columnconfigure(1,weight=2)
+        self.body.columnconfigure(0, weight=1)
+        self.body.columnconfigure(1, weight=2)
         self.filters = Frame(self.body, bg="red")
         self.results = Frame(self.body, bg="yellow")
 
         self.filters.grid(row=0, column=0, sticky="nsew")
         self.results.grid(row=0, column=1, sticky="nsew")
 
-        self.ingredients = Entry(self.search, font=root.font)
-        self.ingredients.pack(side=TOP, expand=True, fill='both', padx=10,
-                              pady=15)
+        self.search.columnconfigure(0, weight=4)
+        self.search.columnconfigure(1, weight=1)
+        self.search.rowconfigure(0, weight=1)
+
+        self.enter = Button(self.search, text="Search", relief = "flat",
+                            bg = "white")
+
+        self.ingredients = Entry(self.search, font=root.font, fg="Grey",
+                                 relief = "flat")
+        self.ingredients.insert(END, "Enter some ingredients...")
+
+        self.ingredients.grid(row=0, column=0, padx=(10, 0),
+                              pady=15, sticky="nsew")
+        self.enter.grid(row=0, column=1, padx=(1, 10),
+                              pady=15, sticky="nsew")
+
+        self.ingredients.bind("<Button-1>", lambda a:
+        edit_entry(self.ingredients))
+        self.ingredients.bind("<FocusOut>", lambda a:
+        redo_entry(self.ingredients))
 
         self.filter_making()
 
     def filter_making(self):
         self.strings = [StringVar(), StringVar(), StringVar(),
-                   StringVar()]
+                        StringVar()]
 
         # for s in strings:
         #     s.set("Any")
         # default.set("Any")
 
         filter_list = ["Meal Type", "Dish Type", "Region of Origin",
-                          "Dietary Requirements"]
-        filter_options =[["Any", "Breakfast", "Lunch/Dinner", "Snack"],
-                         ["Any", "Maincourse", "Side Dish", "Starter",
-                          "Desserts",
-                          "Alcohol Cocktail"], ["Any", "Italian", "Chinese",
-                                                "Indian", "Japanese",
-                                                "korean", "Mediterranean",
-                                                "Mexican", "Central Europe",
-                                                "Eastern Europe", "Asian",
-                                                "British", "American",
-                                                "South American"], ["Any",
-                         "Vegetarian", "Vegan", "Dairy-Free", "Peanut-Free"]]
+                       "Dietary Requirements"]
+        filter_options = [["Any", "Breakfast", "Lunch/Dinner", "Snack"],
+                          ["Any", "Maincourse", "Side Dish", "Starter",
+                           "Desserts",
+                           "Alcohol Cocktail"], ["Any", "Italian", "Chinese",
+                                                 "Indian", "Japanese",
+                                                 "korean", "Mediterranean",
+                                                 "Mexican", "Central Europe",
+                                                 "Eastern Europe", "Asian",
+                                                 "British", "American",
+                                                 "South American"], ["Any",
+                                                                     "Vegetarian",
+                                                                     "Vegan",
+                                                                     "Dairy-Free",
+                                                                     "Peanut-Free"]]
         for i in range(8):
-            print(i, math.floor(i/2))
+            print(i, math.floor(i / 2))
             # self.filters.rowconfigure(0, weight=1)
             if i % 2 == 0:
-                label = Label(self.filters, bg="green", anchor = "w",
-                              text = filter_list[math.floor(i/2)])
-                label.pack(side=TOP, expand=True, fill='both', padx=(0,20),
-                              pady=5)
+                label = Label(self.filters, bg="green", anchor="w",
+                              text=filter_list[math.floor(i / 2)])
+                label.pack(side=TOP, expand=True, fill='both', padx=(0, 20),
+                           pady=5)
             if i % 2 == 1:
                 menu = ttk.Combobox(self.filters, textvariable=self.strings[
-                    math.floor(i/2)])
+                    math.floor(i / 2)])
                 menu['values'] = filter_options[
-                    math.floor(i/2)]
+                    math.floor(i / 2)]
                 menu.current(0)
                 menu['state'] = 'readonly'
                 self.filter_list.append(menu)
-                menu.pack(side=TOP, expand=True, fill='both', padx=(20,0),
-                              pady=5)
+                menu.pack(side=TOP, expand=True, fill='both', padx=(20, 0),
+                          pady=5)
 
-        print(self.filter_list)
 
 if __name__ == "__main__":
     MainProgram()
