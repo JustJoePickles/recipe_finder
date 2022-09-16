@@ -4,6 +4,9 @@ from PIL import Image, ImageTk
 import math
 from tkinter import ttk
 
+api_id = "b2e4769a"
+api_key = "ebb05e24a1f6b55f2f229af673c8ed2a"
+
 
 class MainProgram():
     def __init__(self):
@@ -37,8 +40,7 @@ class MainProgram():
         image = ImageTk.PhotoImage(image)
         return image
 
-    def search_logic(self):
-        pass
+
 class Overlay():
     def __init__(self, root):
         self.reference = "overlay"
@@ -75,11 +77,32 @@ class HomePage():
                 self["fg"] = "grey"
                 self.insert(0, "Enter some ingredients...")
 
+        def search_logic(self):
+            key_id_dict = {"Meal Type": "&mealType=", "Dish Type":
+                "&dishType=", "Region of Origin": "&cuisineType=",
+                           "Dietary Requirements": "&health="}
+            query = self.ingredients.get()
+            print(api_id, api_key)
+            if query != "Enter some ingredients..." and query != "":
+                url = "https://api.edamam.com/api/recipes/v2?type=public&q=" + \
+                      query + "&app_id=" + api_id + "&app_key=" + api_key
+                for filter in self.filter_list:
+                    value = filter.get().lower()
+                    if value != "any":
+                        url += key_id_dict[
+                                   self.filter_types[self.filter_list.index(
+                                       filter)]]+value
+                print(url)
+                request = requests.get(url)
+                request = request.json()
+                print(request)
+                for item in request["hits"]:
+                    print(item["recipe"]["url"])
+
         #######################################################################
         # Level 1
         self.reference = "homepage"
         self.blank = PhotoImage()
-        self.grid_objects = []
         self.filter_list = []
         self.window = Frame(root.root, bg="blue", width=0, height=0)
         self.window.grid(row=0, column=0, sticky="nsew")
@@ -163,17 +186,18 @@ class HomePage():
         self.search.columnconfigure(1, weight=1)
         self.search.rowconfigure(0, weight=1)
 
-        self.enter = Button(self.search, text="Search", relief = "flat",
-                            bg = "white")
+        self.enter = Button(self.search, text="Search", relief="flat",
+                            bg="white", command=lambda: search_logic(
+                self))
 
         self.ingredients = Entry(self.search, font=root.font, fg="Grey",
-                                 relief = "flat")
+                                 relief="flat")
         self.ingredients.insert(END, "Enter some ingredients...")
 
         self.ingredients.grid(row=0, column=0, padx=(10, 0),
                               pady=15, sticky="nsew")
         self.enter.grid(row=0, column=1, padx=(1, 10),
-                              pady=15, sticky="nsew")
+                        pady=15, sticky="nsew")
 
         self.ingredients.bind("<Button-1>", lambda a:
         edit_entry(self.ingredients))
@@ -190,9 +214,9 @@ class HomePage():
         #     s.set("Any")
         # default.set("Any")
 
-        filter_list = ["Meal Type", "Dish Type", "Region of Origin",
-                       "Dietary Requirements"]
-        filter_options = [["Any", "Breakfast", "Lunch/Dinner", "Snack"],
+        self.filter_types = ["Meal Type", "Dish Type", "Region of Origin",
+                        "Dietary Requirements"]
+        filter_options = [["Any", "Breakfast", "Lunch", "Dinner", "Snack"],
                           ["Any", "Maincourse", "Side Dish", "Starter",
                            "Desserts",
                            "Alcohol Cocktail"], ["Any", "Italian", "Chinese",
@@ -211,7 +235,7 @@ class HomePage():
             # self.filters.rowconfigure(0, weight=1)
             if i % 2 == 0:
                 label = Label(self.filters, bg="green", anchor="w",
-                              text=filter_list[math.floor(i / 2)])
+                              text=self.filter_types[math.floor(i / 2)])
                 label.pack(side=TOP, expand=True, fill='both', padx=(0, 20),
                            pady=5)
             if i % 2 == 1:
