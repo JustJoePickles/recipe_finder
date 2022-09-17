@@ -91,7 +91,7 @@ class HomePage():
                     if value != "any":
                         url += key_id_dict[
                                    self.filter_types[self.filter_list.index(
-                                       filter)]]+value
+                                       filter)]] + value
                 print(url)
                 request = requests.get(url)
                 request = request.json()
@@ -174,13 +174,11 @@ class HomePage():
         #######################################################################
         # Body
         self.body.rowconfigure(0, weight=1)
-        self.body.columnconfigure(0, weight=1)
-        self.body.columnconfigure(1, weight=2)
-        self.filters = Frame(self.body, bg="red")
-        self.results = Frame(self.body, bg="yellow")
+        self.body.columnconfigure(0, weight=2)
+        self.body.columnconfigure(1, weight=1)
 
+        self.filters = Frame(self.body, bg="red")
         self.filters.grid(row=0, column=0, sticky="nsew")
-        self.results.grid(row=0, column=1, sticky="nsew")
 
         self.search.columnconfigure(0, weight=4)
         self.search.columnconfigure(1, weight=1)
@@ -205,6 +203,54 @@ class HomePage():
         redo_entry(self.ingredients))
 
         self.filter_making()
+        #######################################################################
+        # Scroll bar
+        self.results_frame = Frame(self.body, bg="yellow")
+        self.results = Canvas(self.results_frame, bg="blue",
+                              highlightthickness=0)
+        self.results_frame.grid(row=0, column=1, sticky="nsew")
+
+        self.scrollbar = Scrollbar(self.results_frame, orient="vertical",
+                                       command=self.results.yview)
+        self.scrollable_frame = Frame(self.results, bg="pink")
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.results.configure(
+                scrollregion=self.results.bbox("all")))
+
+        self.canvas_frame = self.results.create_window((0, 0),
+                                           window=self.scrollable_frame,
+                                   anchor="nw")
+        self.results.pack(side="left", fill="both", expand=True)
+        for i in range(50):
+            Label(self.scrollable_frame,
+                      text="Sample scrolling label: "+str(i)).pack(
+                side="top", fill="both", expand=True)
+        self.results.configure(yscrollcommand=self.scrollbar.set)
+
+        self.scrollbar.pack(side="right", fill="y")
+        self.results.bind('<Configure>', self.FrameWidth)
+        self.scrollable_frame.bind("<Configure>", self.OnFrameConfigure)
+
+
+        self.scrollable_frame.bind('<Enter>', self._bound_to_mousewheel)
+        self.scrollable_frame.bind('<Leave>', self._unbound_to_mousewheel)
+
+    def _bound_to_mousewheel(self, event):
+        self.results.bind_all("<MouseWheel>", self._on_mousewheel)
+
+    def _unbound_to_mousewheel(self, event):
+        self.results.unbind_all("<MouseWheel>")
+
+    def _on_mousewheel(self, event):
+        self.results.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def FrameWidth(self, event):
+        canvas_width = event.width
+        self.results.itemconfig(self.canvas_frame, width=canvas_width)
+
+    def OnFrameConfigure(self, event):
+        self.results.configure(scrollregion=self.results.bbox("all"))
 
     def filter_making(self):
         self.strings = [StringVar(), StringVar(), StringVar(),
@@ -215,7 +261,7 @@ class HomePage():
         # default.set("Any")
 
         self.filter_types = ["Meal Type", "Dish Type", "Region of Origin",
-                        "Dietary Requirements"]
+                             "Dietary Requirements"]
         filter_options = [["Any", "Breakfast", "Lunch", "Dinner", "Snack"],
                           ["Any", "Maincourse", "Side Dish", "Starter",
                            "Desserts",
