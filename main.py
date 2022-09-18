@@ -3,6 +3,7 @@ import requests
 from PIL import Image, ImageTk
 import math
 from tkinter import ttk
+import webbrowser
 
 api_id = "b2e4769a"
 api_key = "ebb05e24a1f6b55f2f229af673c8ed2a"
@@ -78,26 +79,34 @@ class HomePage():
                 self.insert(0, "Enter some ingredients...")
 
         def search_logic(self):
+            for widget in self.scrollable_frame.winfo_children():
+                widget.destroy()
             key_id_dict = {"Meal Type": "&mealType=", "Dish Type":
                 "&dishType=", "Region of Origin": "&cuisineType=",
                            "Dietary Requirements": "&health="}
             query = self.ingredients.get()
-            print(api_id, api_key)
             if query != "Enter some ingredients..." and query != "":
                 url = "https://api.edamam.com/api/recipes/v2?type=public&q=" + \
                       query + "&app_id=" + api_id + "&app_key=" + api_key
+
                 for filter in self.filter_list:
                     value = filter.get().lower()
                     if value != "any":
+                        value = value.split(" ")
+                        value = "%20".join(value)
                         url += key_id_dict[
                                    self.filter_types[self.filter_list.index(
                                        filter)]] + value
                 print(url)
                 request = requests.get(url)
                 request = request.json()
-                print(request)
                 for item in request["hits"]:
-                    print(item["recipe"]["url"])
+                    Button(self.scrollable_frame,
+                          text=item["recipe"]["label"]+"\n("+item["recipe"][
+                              "url"]+")", bg = "orange", command = lambda i=item["recipe"][
+                              "url"]:
+                           self.callback(i), relief = "flat").pack(
+                        side="top", fill="both", expand=True, pady = 3)
 
         #######################################################################
         # Level 1
@@ -222,10 +231,7 @@ class HomePage():
                                            window=self.scrollable_frame,
                                    anchor="nw")
         self.results.pack(side="left", fill="both", expand=True)
-        for i in range(50):
-            Label(self.scrollable_frame,
-                      text="Sample scrolling label: "+str(i)).pack(
-                side="top", fill="both", expand=True)
+
         self.results.configure(yscrollcommand=self.scrollbar.set)
 
         self.scrollbar.pack(side="right", fill="y")
@@ -252,6 +258,9 @@ class HomePage():
     def OnFrameConfigure(self, event):
         self.results.configure(scrollregion=self.results.bbox("all"))
 
+    def callback(self, url):
+        webbrowser.open_new_tab(url)
+
     def filter_making(self):
         self.strings = [StringVar(), StringVar(), StringVar(),
                         StringVar()]
@@ -263,7 +272,7 @@ class HomePage():
         self.filter_types = ["Meal Type", "Dish Type", "Region of Origin",
                              "Dietary Requirements"]
         filter_options = [["Any", "Breakfast", "Lunch", "Dinner", "Snack"],
-                          ["Any", "Maincourse", "Side Dish", "Starter",
+                          ["Any", "Main course", "Side Dish", "Starter",
                            "Desserts",
                            "Alcohol Cocktail"], ["Any", "Italian", "Chinese",
                                                  "Indian", "Japanese",
@@ -277,8 +286,6 @@ class HomePage():
                                                                      "Dairy-Free",
                                                                      "Peanut-Free"]]
         for i in range(8):
-            print(i, math.floor(i / 2))
-            # self.filters.rowconfigure(0, weight=1)
             if i % 2 == 0:
                 label = Label(self.filters, bg="green", anchor="w",
                               text=self.filter_types[math.floor(i / 2)])
