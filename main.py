@@ -4,6 +4,8 @@ from PIL import Image, ImageTk
 import math
 from tkinter import ttk
 import webbrowser
+from urllib.request import urlopen
+import threading
 
 api_id = "b2e4769a"
 api_key = "ebb05e24a1f6b55f2f229af673c8ed2a"
@@ -16,7 +18,6 @@ class MainProgram():
         self.root.geometry("800x500")
         self.root.configure(background="white")
         self.font = ("Noto Sans SemiBold", 14)
-
         self.overlay = Overlay(self)
 
         self.homepage = HomePage(self)
@@ -43,29 +44,53 @@ class MainProgram():
 
 
 class Overlay():
+
     def __init__(self, root):
         self.reference = "overlay"
-        self.window = Frame(root.root, bg="pink", width=0, height=0,
+        self.window = Frame(root.root, bg="#3a7002", width=0, height=0,
                             highlightbackground="white",
-                            highlightthickness=0)
+                            highlightthickness=4)
         self.window.grid(row=0, column=0, sticky="nsew", padx=40, pady=15)
 
         self.window.columnconfigure(0, weight=1)
-        self.window.columnconfigure(1, weight=8)
-        self.window.columnconfigure(2, weight=1)
         self.window.rowconfigure(0, weight=1)
-        # info = Frame(self.window, bg="purple")
-        # title = Frame(self.window, bg="orange")
-        # escape = Frame(self.window, bg="cyan")
-        #
-        # info.grid(row=0, column=0, sticky="nsew")
-        # title.grid(row=0, column=1, sticky="nsew")
-        # escape.grid(row=0, column=2, sticky="nsew")
+        self.window.rowconfigure(1, weight=1)
 
+        w,h = 902, 589
+        self.instructions_image = Image.open("instructions.png")
+        self.img_copy = self.instructions_image.copy()
+        # Creating and then gridding the instructions
+        self.instructions_label = Label(self.window,
+                                     image=ImageTk.PhotoImage(self.instructions_image),
+                                   bg="#3a7002", borderwidth=0)
+        self.instructions_label.grid(row=0, column=0, sticky="nsew")
+        self.instructions_label.bind('<Configure>', self._resize_image)
+
+        self.escape_image = root.format_image("exit.png", (50, 50))
+        self.escape_button = Button(self.window, image=self.escape_image,
+                                    width=50, height=50, compound="c",
+                                    relief="flat",
+                                    borderwidth=0,
+                                    bg="#3a7002", activebackground="#3a7002",
+                                    command=lambda : root.change_frame(
+                                        "homepage"))
+        self.escape_button.grid(row=0, column=0, sticky="ne")
+
+        self.edamam_image = root.format_image("Edamam_Badge.png", (85, 25))
+        self.edamam = Label(self.window, width = 85, height = 25,
+                            compound="c", image=self.edamam_image, bg="#3a7002")
+        self.edamam.grid(row=0, column=0, sticky="se")
+    def _resize_image(self, event):
+        new_width = event.width
+        new_height = event.height
+
+        self.image = self.img_copy.resize((new_width, new_height))
+
+        self.background_image = ImageTk.PhotoImage(self.image)
+        self.instructions_label.configure(image=self.background_image)
 
 class HomePage():
     def __init__(self, root):
-
         def edit_entry(self):
             text = self.get()
             if text == "Enter some ingredients...":
@@ -77,7 +102,25 @@ class HomePage():
             if text.strip() == "":
                 self["fg"] = "grey"
                 self.insert(0, "Enter some ingredients...")
-
+        def image_conversion(item,i):
+            data = urlopen(item["recipe"]["images"]["THUMBNAIL"][
+                               "url"])
+            image = ImageTk.PhotoImage(data=data.read())
+            b = Button(self.scrollable_frame,
+                       text=item["recipe"]["label"], bg="#65a603",
+                       command=lambda i=item["recipe"][
+                           "url"]:
+                       self.callback(i), relief="flat", image=
+                       image, compound=TOP, wraplength = 150)
+            b.image = image
+            if i % 2 == 0:
+                b.grid(row=math.floor(i/2), column=i % 2, sticky="nsew",
+                       padx=(7,3),
+                       pady=2)
+            else:
+                b.grid(row=math.floor(i / 2), column=i % 2, sticky="nsew",
+                       padx=(3,10),
+                       pady=2)
         def search_logic(self):
             for widget in self.scrollable_frame.winfo_children():
                 widget.destroy()
@@ -97,23 +140,28 @@ class HomePage():
                         url += key_id_dict[
                                    self.filter_types[self.filter_list.index(
                                        filter)]] + value
-                print(url)
                 request = requests.get(url)
                 request = request.json()
+                self.scrollable_frame.columnconfigure(0, weight=1)
+                self.scrollable_frame.columnconfigure(1, weight=1)
+                for i in range(len(request["hits"])):
+                    self.scrollable_frame.rowconfigure(math.floor(i / 2),
+                                                       weight=1)
+                i=0
                 for item in request["hits"]:
-                    Button(self.scrollable_frame,
-                          text=item["recipe"]["label"]+"\n("+item["recipe"][
-                              "url"]+")", bg = "orange", command = lambda i=item["recipe"][
-                              "url"]:
-                           self.callback(i), relief = "flat").pack(
-                        side="top", fill="both", expand=True, pady = 3)
 
+                    x = threading.Thread(target=image_conversion,
+                                         args=(item,i))
+                    x.start()
+                    i+=1
+
+        root.root.bind('<Return>', lambda a: search_logic(self))
         #######################################################################
         # Level 1
         self.reference = "homepage"
         self.blank = PhotoImage()
         self.filter_list = []
-        self.window = Frame(root.root, bg="blue", width=0, height=0)
+        self.window = Frame(root.root, bg="#f9e99e", width=0, height=0)
         self.window.grid(row=0, column=0, sticky="nsew")
 
         self.window.columnconfigure(0, weight=1)
@@ -124,8 +172,8 @@ class HomePage():
         self.window.rowconfigure(3, weight=9)
 
         self.top_bar = Frame(self.window, bg="red")
-        self.search = Frame(self.window, bg="green")
-        self.headers = Frame(self.window, bg="dark green")
+        self.search = Frame(self.window, bg="#65a603")
+        self.headers = Frame(self.window, bg="#2f6733")
         self.body = Frame(self.window, bg="yellow")
 
         self.top_bar.grid(row=0, column=0, sticky="nsew")
@@ -154,17 +202,23 @@ class HomePage():
                                       width=10, height=10, compound="c",
                                       relief="flat",
                                       borderwidth=0,
-                                      bg="green", activebackground="green",
+                                      bg="#65a603", activebackground="#65a603",
                                       command=lambda: root.change_frame(
                                           "overlay"))
         self.question_button.pack(side=LEFT, expand=True, fill='both')
+
+        self.title_image = root.format_image("feed.png", (1235
+                                                          , 190))
+        self.title_screen = Label(self.title, image=self.title_image, width=10,
+                                  height=20, compound="c", bg="#f9e99e")
+        self.title_screen.pack(side=LEFT, expand=True, fill='both')
 
         self.escape_image = root.format_image("exit.png", (50, 50))
         self.escape_button = Button(self.escape, image=self.escape_image,
                                     width=10, height=10, compound="c",
                                     relief="flat",
                                     borderwidth=0,
-                                    bg="green", activebackground="green",
+                                    bg="#65a603", activebackground="#65a603",
                                     command=lambda: root.root.destroy())
         self.escape_button.pack(side=LEFT, expand=True, fill='both')
 
@@ -173,10 +227,10 @@ class HomePage():
 
         self.headers.columnconfigure(0, weight=2)
         self.headers.columnconfigure(1, weight=2)
-        self.filter_header = Label(self.headers, bg="green", anchor="w",
-                                   text="Filters")
-        self.results_header = Label(self.headers, bg="green", anchor="w",
-                                    text="Results")
+        self.filter_header = Label(self.headers, bg="#65a603", anchor="w",
+                                   text="Filters", font = ("Open Sans", 12))
+        self.results_header = Label(self.headers, bg="#65a603", anchor="w",
+                                    text="Results", font = ("Open Sans", 12))
         self.filter_header.grid(row=0, column=0, sticky="nsew")
         self.results_header.grid(row=0, column=1, sticky="nsew")
 
@@ -186,7 +240,7 @@ class HomePage():
         self.body.columnconfigure(0, weight=2)
         self.body.columnconfigure(1, weight=1)
 
-        self.filters = Frame(self.body, bg="red")
+        self.filters = Frame(self.body, bg="#3b7302")
         self.filters.grid(row=0, column=0, sticky="nsew")
 
         self.search.columnconfigure(0, weight=4)
@@ -196,6 +250,7 @@ class HomePage():
         self.enter = Button(self.search, text="Search", relief="flat",
                             bg="white", command=lambda: search_logic(
                 self))
+
 
         self.ingredients = Entry(self.search, font=root.font, fg="Grey",
                                  relief="flat")
@@ -213,15 +268,15 @@ class HomePage():
 
         self.filter_making()
         #######################################################################
-        # Scroll bar
+        # Results
         self.results_frame = Frame(self.body, bg="yellow")
-        self.results = Canvas(self.results_frame, bg="blue",
+        self.results = Canvas(self.results_frame, bg="#eff2d5",
                               highlightthickness=0)
         self.results_frame.grid(row=0, column=1, sticky="nsew")
 
         self.scrollbar = Scrollbar(self.results_frame, orient="vertical",
                                        command=self.results.yview)
-        self.scrollable_frame = Frame(self.results, bg="pink")
+        self.scrollable_frame = Frame(self.results, bg="#eff2d5")
         self.scrollable_frame.bind(
             "<Configure>",
             lambda e: self.results.configure(
@@ -287,7 +342,7 @@ class HomePage():
                                                                      "Peanut-Free"]]
         for i in range(8):
             if i % 2 == 0:
-                label = Label(self.filters, bg="green", anchor="w",
+                label = Label(self.filters, bg="#65a603", anchor="w",
                               text=self.filter_types[math.floor(i / 2)])
                 label.pack(side=TOP, expand=True, fill='both', padx=(0, 20),
                            pady=5)
